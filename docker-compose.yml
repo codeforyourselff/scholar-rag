@@ -1,6 +1,7 @@
+version: '0.1'
 services:
   postgres:
-    image: postgres:16.2-alpine
+    image: postgres:16.2-alpine # why we use this specific version? Because it is the latest stable release as of June 2024, and alpine versions are smaller and more secure.
     container_name: postgres_db
     restart: unless-stopped
     environment:
@@ -22,8 +23,8 @@ services:
           cpus: '1.0'
           memory: 1G
 
-  redis:
-    image: redis:7.2-alpine
+  redis: 
+    image: redis:7.2-alpine # why we use this specific version? According to redis open source documentation, this version provides license for commercial use. Alpine versions are smaller and more secure.
     container_name: redis_cache
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD}
@@ -42,7 +43,7 @@ services:
           cpus: '0.5'
           memory: 512M
   qdrant:
-    image: qdrant/qdrant:v1.17
+    image: qdrant/qdrant:v1.17 # why we use this specific version ? not alpine ? as qdrant is build in rust and alpine generally use compiler gcc or c lang which is not compatible with rust, and also this version is the latest stable release as of June 2024.
     container_name: qdrant_vector_db
     restart: unless-stopped
     ports:
@@ -54,8 +55,30 @@ services:
       resources:
         limits:
           cpus: '2.0'
-          memory: 4G # Vectors require significantly more memory than simple caching
-
+          memory: 4G # Vectors require significantly more memory than simple caching (In future, take an consideration by modifying this)
+  fastapi:
+    build: .
+    container_name: scholar_rag
+    restart: unless-stopped
+    ports:
+      - "${FASTAPI_PORT}:8000"
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
 volumes:
   pg_data:
   redis_data:
