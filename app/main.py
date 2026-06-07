@@ -1,11 +1,24 @@
 # Main entry point for the Scholar RAG Web Application
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from uvicorn import run
 
+# manage the lifecycle of external resources (e.g., database connections, background tasks)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic here
+    yield
+    # Cleanup logic here
+
 # Function to create the FastAPI application
 def create_application():
-    app = FastAPI()
+    app = FastAPI(
+        title="Scholar RAG Web App",
+        description="A web application for the Scholar RAG system.",
+        version="1.0.0",
+        lifespan=lifespan
+    )
     return app
 
 # Create the FastAPI application
