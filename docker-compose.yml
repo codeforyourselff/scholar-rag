@@ -4,23 +4,23 @@ services:
     container_name: postgres_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${PG_DB_USER}
-      POSTGRES_PASSWORD: ${PG_DB_PASSWORD}
-      POSTGRES_DB: ${PG_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_NAME}
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
-      - "${PG_DB_PORT}:${PG_DB_PORT}"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
-      interval: ${PG_INTERVAL}
-      timeout: ${PG_TIMEOUT}
-      retries: ${PG_RETRIES}
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: ${POSTGRES_INTERVAL}
+      timeout: ${POSTGRES_TIMEOUT}
+      retries: ${POSTGRES_RETRIES}
     deploy:
       resources:
         limits:
-          cpus: ${PG_CPU_LIMIT}
-          memory: ${PG_MEMORY_LIMIT}
+          cpus: ${POSTGRES_CPU_LIMIT}
+          memory: ${POSTGRES_MEMORY_LIMIT}
 
   redis: 
     image: redis:7.2-alpine # why we use this specific version? According to redis open source documentation, this version provides license for commercial use. Alpine versions are smaller and more secure.
@@ -33,7 +33,7 @@ services:
       - "${REDIS_PORT}:${REDIS_PORT}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: "${REDIS_INTERVAL}"
+      interval: ${REDIS_INTERVAL}
       timeout: ${REDIS_TIMEOUT}
       retries: ${REDIS_RETRIES}
     deploy:
@@ -55,17 +55,18 @@ services:
         limits:
           cpus: ${QDRANT_CPU_LIMIT}
           memory: ${QDRANT_MEMORY_LIMIT}
-  fastapi:
+  api:
     build: .
+    env_file:
+      - .env
     container_name: scholar_rag
     restart: unless-stopped
     ports:
       - "${FASTAPI_PORT}:${FASTAPI_PORT}"
     environment:
-      DB_USER: ${PG_DB_USER}
-      DB_PASSWORD: ${PG_DB_PASSWORD}
-      DB_NAME: ${PG_DB_NAME}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES__HOST: postgres
+      REDIS__HOST: redis
+      QDRANT__HOST: qdrant
     depends_on:
       postgres:
         condition: service_healthy
