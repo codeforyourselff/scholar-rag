@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/codeforyourselff/scholar-rag.git
+    rev: v1.8.0 # Match this to your mypy version
+    hooks:
+      - id: mypy
+        # This forces the hook to use your pyproject.toml
+        args: [--config-file=pyproject.toml]
+        # Include any third-party stubs you need
+        additional_dependencies: [pydantic, types-requests]

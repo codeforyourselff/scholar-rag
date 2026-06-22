@@ -31,8 +31,6 @@ async def lifespan(app: FastAPI)-> AsyncIterator[None]:
 
 # Function to create the FastAPI application
 
-
-
 def create_application(settings: Settings = get_settings()) -> FastAPI:
     logging.basicConfig(level=settings.log_level.upper())
 

@@ -1,10 +1,13 @@
 import asyncio
 import logging
-import asyncpg
+import asyncpg # type: ignore[import-untyped]
 from app.config import Settings, get_settings
 from qdrant_client import AsyncQdrantClient
 from redis.asyncio import Redis
 from sentence_transformers import SentenceTransformer
+from openai import AsyncOpenAI
+
+
 logger = logging.getLogger(__name__)
 
 class Container:
@@ -14,7 +17,7 @@ class Container:
         self._redis : Redis | None = None
         self._pg_pool: asyncpg.Pool | None = None
         self._embedder: SentenceTransformer | None = None
-        self._llm: object | None = None
+        self._llm: AsyncOpenAI | None = None
 
     @property
     def settings(self) -> Settings:
@@ -71,8 +74,6 @@ class Container:
 
         # LLM Client 
         if settings.llm.provider == "openai":
-            from openai import AsyncOpenAI
-
             self._llm = AsyncOpenAI(
                 api_key=settings.llm.api_key.get_secret_value() if settings.llm.api_key else None,
                 base_url=settings.llm.base_url
