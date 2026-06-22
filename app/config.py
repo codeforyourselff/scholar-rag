@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from functools import lru_cache
 from pydantic import AnyUrl, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -12,6 +12,12 @@ QdrantDsn = Annotated[
 
 # Main application settings
 class Settings(BaseSettings):
+    """Root settings object — the single source of truth for the app."""
+    environment : AppEnvironment = AppEnvironment.local
+    log_level : Literal["INFO","Trace","Debug","Warn","Error","Fatal"] = "INFO"
+    service_name : str = "scholar-rag"
+    version : str = "0.1.0"
+
     """Pydantic settings model for the Scholar RAG application."""
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -19,15 +25,9 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
         case_sensitive=False,
         env_prefix="APP_",
-        extra="ignore",
+        extra="ignore"
     )
     
-    """Root settings object — the single source of truth for the app."""
-    environment : AppEnvironment = AppEnvironment.local
-    log_level : str = "INFO"
-    service_name : str = "scholar-rag"
-    version : str = "0.1.0"
-
     """External service configurations."""
     qdrant : QdrantSettings = Field(default_factory=QdrantSettings)
     postgres : PostgresSettings = Field(default_factory=PostgresSettings)
