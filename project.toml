@@ -52,6 +52,9 @@ module = [
 ]
 ignore_missing_imports=true
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true

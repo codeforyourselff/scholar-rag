@@ -1,77 +1,55 @@
-from enum import Enum
-from pydantic import BaseModel, Field, SecretStr
+from typing import Any
+from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from app.config import Settings
 
-# AppEnvironment
-class AppEnvironment(str, Enum):
-    local = "local"
-    development = "development"
-    production = "production"
+class MetaData(BaseModel):
+    model_config = ConfigDict(frozen=True,strict=True)
 
-# Configuration for Qdrant vector database
-class QdrantSettings(BaseModel):
-    host : str = "localhost" 
-    port : int = 6333
-    api_key : SecretStr | None = None
-    collection : str = "scholar_rag"
-    vector_size : int = 384
-    https : bool = False
+    file_name : str
+    file_size : float
+    file_extension: str
+    file_source : str
+    timestamp : str = Field(default_factory=str)
+    character_encoding : str
+    tags: list[str] = Field(default_factory=list)
+    match_conditions: dict[str, Any] = Field(default_factory=dict)
 
-    @property
-    def url(self) -> str:
-        __scheme = "https" if self.https else "http"
-        return f"{__scheme}://{self.host}:{self.port}"
+    def __post_init__(self) -> None:
+        if self.file_name == "" or self.file_name == None:
+            raise ValueError(f"File name should not be empty")
+        if self.file_source == "" or self.file_source == None:
+            raise ValueError(f"File source should not be empty")
+        if self.timestamp is None:
+            raise ValueError(f"Timestamp should not be empty")
 
-# Configuration for PostgreSQL database
-class PostgresSettings(BaseModel):
-    host : str = "127.0.0.1"
-    port : int = 5432
-    user : str = "scholar"
-    password : SecretStr | None = None
-    database : str = "scholar_rag"
-    pool_min_size : int = 1
-    pool_max_size : int = 10
-    
-    @property
-    def dsn(self) -> str:
-        __pwd = self.password.get_secret_value() if self.password else ""
-        return f"postgresql://{self.user}:{__pwd}@{self.host}:{self.port}/{self.database}"
+class Point(BaseModel):
+    model_config = ConfigDict(frozen=True,strict=True)
 
-# Configuration for Redis
-class RedisSettings(BaseModel):
-    host : str = "localhost"
-    port : int = 6379
-    db : int = 0
-    password : SecretStr | None = None
-    ttl_seconds : int = 3600
+    point_id : str = Field(default_factory=str)
+    vector : list[float] = Field(default_factory=list[float])
+    MetaData : dict
 
-    @property
-    def url(self) -> str:
-        __auth = f":{self.password.get_secret_value()}@" if self.password else ""
-        return f"redis://{__auth}{self.host}:{self.port}/{self.db}"
+    def __post_init__(self) -> None:
+        if self.point_id is None:
+            raise ValueError(f"PointId cannot be none")
+        if self.vector != int(Settings.embedder.dim):
+            raise ValueError(f"The vector size should match with embedder dim size")
 
-# Configuration for the embedding model
-class EmbedderSettings(BaseModel):
-    model_name : str = "sentence-transformers/all-MiniLM-L6-v2"
-    dim: int = 384
-    batch_size: int = 64
-    device: str = "cpu"
+class SearchResult(BaseModel):
+    model_config = ConfigDict(frozen=True,strict=True)
 
-# Configuration for the LLM (Language Model)
-class LLMSettings(BaseModel):
-    provider : str = "openai"
-    api_key : SecretStr | None = None
-    model : str = "gpt-4.0-mini"
-    base_url : str | None = None
-    max_tokens : int = 2048
-    temperature : float = 0.0
+    search_id : str
+    score : float = Field(...)
+    MetaData: dict[str, Any]
 
-# Configuration for the API server
-class ApiSettings(BaseModel):
-    title : str = "Scholar RAG Web App"
-    description : str = "A web application for the Scholar RAG system."
-    version : str = "1.0.0"
-    host : str = "localhost"
-    port : int = 8000
-    rate_limit_per_minute : int = 60
-    cors_origins : list[str] = Field(default_factory=list)
-    request_timeout_seconds : int = 30
+    def __post_init__(self) -> None:
+        if self.search_id == "" or self.search_id == None:
+            raise ValueError(f"Search id should not be empty")
+        if self.score > 1.0 or self.score < 0.1:
+            raise ValueError(f"Score should be between given range")
+        
+
+"""Future score for optional payload fileds (equality/ membership)"""
+class Filter(BaseModel):
+    pass
