@@ -1,12 +1,12 @@
 # Main entry point for the Scholar RAG Web Application
 import os
+import uvicorn
 import logging
 from uvicorn import run
 from fastapi import Depends, FastAPI, Request
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from fastapi.responses import JSONResponse
-
 from app.config import Settings, get_settings
 from app.container import Container, build_container
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI)-> AsyncIterator[None]:
 
 # Function to create the FastAPI application
 
-def create_application(settings: Settings = get_settings()) -> FastAPI:
+def create_application(settings: Settings) -> FastAPI:
     logging.basicConfig(level=settings.log_level.upper())
 
     app = FastAPI(
@@ -65,7 +65,8 @@ def create_application(settings: Settings = get_settings()) -> FastAPI:
     return app
 
 # Create the FastAPI application
-app = create_application()
+settings: Settings = get_settings()
+app: FastAPI = create_application(settings)
 
 @app.get("/")
 def read_root():
@@ -73,4 +74,4 @@ def read_root():
 
 # Run the application
 if __name__ == "__main__":
-    run(app, host="127.0.0.1", port=int(os.getenv("FASTAPI_PORT", 8000)))
+    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("FASTAPI_PORT", 8000)))
