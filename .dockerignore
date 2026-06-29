@@ -1,7 +1,5 @@
-# Git
+# Exclude VCS
 .git
-.gitignore
-.gitattributes
 
 # Node
 node_modules
@@ -10,25 +8,25 @@ yarn-error.log
 package-lock.json
 yarn.lock
 
-# Python
-__pycache__
-*.pyc
+# Python artifacts
+__pycache__/
+*.py[cod]s
 *.pyo
-*.egg-info
+*.egg-info/
 .Python
 env/
 venv/
 .venv
+pip-wheel-metadata/
 
-# IDE
-.vscode
-.idea
+# IDE/editor
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# Build
+# Build artifacts
 dist/
 build/
 *.o
@@ -48,23 +46,19 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Testing
+# Testing / coverage
 .coverage
-.pytest_cache
+.pytest_cache/
 coverage/
 htmlcov/
+.mypy_cache/
 
-# Documentation
+# Documentation, CI (optional to exclude)
 docs/
-README.md
-
-# CI/CD
 .github/
 .gitlab-ci.yml
 .circleci/
 Jenkinsfile
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Keep Docker-related files in context (don't ignore Dockerfile/docker-compose)
+# The Dockerfile, docker-compose.yml and .dockerignore should be sent to the daemon

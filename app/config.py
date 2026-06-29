@@ -18,6 +18,7 @@ class QdrantSettings(BaseModel):
     collection : str = "scholar_rag"
     vector_size : int = 384
     https : bool = False
+    search_limit: int = 5
 
     @property
     def url(self) -> str:
@@ -76,7 +77,7 @@ class ApiSettings(BaseModel):
     host : str = "localhost"
     port : int = 8000
     rate_limit_per_minute : int = 60
-    cors_origins : list[str] = Field(default_factory=list)
+    cors_origins : list[str] = ["*"]
     request_timeout_seconds : int = 30
 
 QdrantDsn = Annotated[
