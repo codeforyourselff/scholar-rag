@@ -1,12 +1,13 @@
 import asyncio
 import logging
-import asyncpg # type: ignore[import-untyped]
+import asyncpg
 from app.config import Settings, get_settings
-from qdrant_client import AsyncQdrantClient
 from redis.asyncio import Redis
+from qdrant_client import AsyncQdrantClient
 from sentence_transformers import SentenceTransformer
+from app.adapters.qdrant_adapter import QdrantAdapter
 from openai import AsyncOpenAI
-
+from app.modules.retrieval.service import DocumentRetrievalService
 
 logger = logging.getLogger(__name__)
 
@@ -116,9 +117,10 @@ class Container:
 
         checks["embedder"] = self._embedder is not None
         return checks
+    
+    def get_qdrant_vector_adapter(self)-> DocumentRetrievalService:
+        adapter: QdrantAdapter = QdrantAdapter(client=self.qdrant,collection_name=self._settings.qdrant.collection)
+        return DocumentRetrievalService(vector_store=adapter) # type: ignore
 
 def build_container(settings:Settings) -> Container:
     return Container(settings)
-
-
-
