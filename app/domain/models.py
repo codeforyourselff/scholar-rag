@@ -1,5 +1,6 @@
+import hashlib
 from typing import Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from pydantic import BaseModel, ConfigDict, Field
 from app.config import Settings
 
@@ -35,6 +36,13 @@ class Point(BaseModel):
             raise ValueError(f"PointId cannot be none")
         if self.vector != int(Settings.embedder.dim):
             raise ValueError(f"The vector size should match with embedder dim size")
+        
+class SearchParams(BaseModel):
+    model_config = ConfigDict(frozen=True,strict=True)
+
+    query: list[float] = Field(default_factory=list[float])
+    limit: int
+    MetaData: dict[str,Any]
 
 class SearchResult(BaseModel):
     model_config = ConfigDict(frozen=True,strict=True)
@@ -53,3 +61,23 @@ class SearchResult(BaseModel):
 """Future score for optional payload fileds (equality/ membership)"""
 class Filter(BaseModel):
     pass
+
+
+class DocumentMetaData(BaseModel):
+    source_id: str = Field(...)
+    title: str | None = None
+    author: str | None = None
+
+class DocumentChunk(BaseModel):
+    text: str = Field(...,min_length=1)
+    metadata: DocumentMetaData
+    chunk_index: int = Field(...,ge=0)
+
+    @computed_field
+    def chunk_id(self) -> str:
+        """The idempotency key"""
+        return hashlib.sha256(self.text.encode("utf-8")).hexdigest()
+
+class EmbeddedChunk(DocumentChunk):
+    """A documentChunk augmented with its own vector representation"""
+    vector: list[float] = Field(...)

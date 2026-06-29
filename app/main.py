@@ -2,32 +2,33 @@
 import os
 import uvicorn
 import logging
-from uvicorn import run
 from fastapi import Depends, FastAPI, Request
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes import query_route
 from app.config import Settings, get_settings
 from app.container import Container, build_container
 logger = logging.getLogger(__name__)
 
 def get_container(request: Request) -> Container:
     """Dependency: pull the wired container off app.state (built during lifespan)."""
-    app : FastAPI = request.app
-    return app.state.container
+    __app : FastAPI = request.app
+    return __app.state.container
 
 # manage the lifecycle of external resources (e.g., database connections, background tasks)
 @asynccontextmanager
 async def lifespan(app: FastAPI)-> AsyncIterator[None]:
     # Startup logic here
-    settings : Settings = app.state.settings
-    container = build_container(settings)
-    await container.startup()
-    app.state.container = container
+    __settings: Settings = app.state.settings
+    __container: Container = build_container(__settings)
+    await __container.startup()
+    app.state.container = __container
     try:
         yield
     finally:
-        await container.shutdown()
+        await __container.shutdown()
 
 # Function to create the FastAPI application
 
@@ -47,6 +48,18 @@ def create_application(settings: Settings) -> FastAPI:
     # Stash settigns so lifespan can read them at startup
     app.state.settings = settings
 
+    #cors origin for the fastAPI
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=app.state.settings.api.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+
+    # Router main entry point
+    app.include_router(query_route.router, prefix="/api")
+
     @app.get("/healthz", tags=["health"])
     async def healthz() -> dict[str, str]:
         # Liveness: the process is up. Must NOT depend on backends.
@@ -55,11 +68,11 @@ def create_application(settings: Settings) -> FastAPI:
     @app.get("/readyz", tags=["health"])
     async def readyz(container: Container = Depends(get_container)) -> JSONResponse:
         # Readiness: can we reach our dependencies?
-        checks = await container.check_readiness()
-        ready = all(checks.values())
+        __checks = await container.check_readiness()
+        __ready = all(__checks.values())
         return JSONResponse(
-            status_code=200 if ready else 503,
-            content={"ready": ready, "checks": checks},
+            status_code=200 if __ready else 503,
+            content={"ready": __ready, "checks": __checks},
         )
 
     return app

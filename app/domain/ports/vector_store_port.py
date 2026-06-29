@@ -1,9 +1,10 @@
 from typing import Protocol
-from app.domain.models import MetaData, Point, SearchResult
+from app.domain.models import EmbeddedChunk, SearchParams, SearchResult
 
 class VectorStorePort(Protocol):
-    async def upsert(self,points:list[Point])-> None:
+    
+    async def upsert(self,points:list[EmbeddedChunk])-> None:
         ...
 
-    async def search(self,query:list[float],limit:int,filters: MetaData | None = None)-> list[SearchResult]:
+    async def search(self,searchParams:SearchParams)-> list[SearchResult]:
         ...
