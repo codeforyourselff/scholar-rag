@@ -19,8 +19,8 @@ class TextStreamingLoader:
             author = None
             )
     
-    def stream_file_lines(self,file_path: Path)->Iterator[str]:
-        with open(file_path,"r",encoding='utf-8') as file:
+    def stream_file_lines(self, file_path: Path)->Iterator[str]:
+        with open(file_path, "r", encoding='utf-8') as file:
             for line in file:
                 yield line.rstrip() + " "
 

@@ -40,7 +40,7 @@ class Point(BaseModel):
 class SearchParams(BaseModel):
     model_config = ConfigDict(frozen=True,strict=True)
 
-    query: list[float] = Field(default_factory=list[float])
+    query: list[float]
     limit: int
     MetaData: dict[str,Any]
 

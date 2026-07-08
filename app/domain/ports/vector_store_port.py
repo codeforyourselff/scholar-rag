@@ -1,10 +1,9 @@
-from typing import Protocol
-from app.domain.models import EmbeddedChunk, SearchParams, SearchResult
+from typing import Any, Protocol
+from app.domain.models import EmbeddedChunk
 
 class VectorStorePort(Protocol):
-    
     async def upsert(self,points:list[EmbeddedChunk])-> None:
         ...
 
-    async def search(self,searchParams:SearchParams)-> list[SearchResult]:
-        ...
+    async def search(self,query: list[float], limit: int, MetaData: dict[str,Any])-> list[EmbeddedChunk]:
+        ... 
