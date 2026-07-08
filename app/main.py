@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import query_route
+from app.api.routes import document
 from app.config import Settings, get_settings
 from app.container import Container, build_container
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ def create_application(settings: Settings) -> FastAPI:
     )
 
     # Router main entry point
-    app.include_router(query_route.router, prefix="/api")
+    app.include_router(document.router, prefix="/api")
 
     @app.get("/healthz", tags=["health"])
     async def healthz() -> dict[str, str]:
