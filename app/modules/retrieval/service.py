@@ -9,7 +9,6 @@ class DocumentRetrievalService:
 
     async def execute(self, user_query: str, limit: int)-> list[EmbeddedChunk]:
         embedded_query = self.embedder.embed_query(user_query)
-
         return await self.vector_store.search(embedded_query,limit,MetaData={})
 
 
