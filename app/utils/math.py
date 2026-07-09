@@ -1,6 +1,6 @@
 from numpy import sqrt
 
-def cosine_similarity(self,vector1: list[float], vector2:list[float])-> float:
+def cosine_similarity(vector1: list[float], vector2:list[float])-> float:
     """Calculate the cosine similarity between two vectors."""
     if len(vector1) != len(vector2):
         raise ValueError("Vectors must be of the same length")

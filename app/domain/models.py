@@ -62,7 +62,6 @@ class SearchResult(BaseModel):
 class Filter(BaseModel):
     pass
 
-
 class DocumentMetaData(BaseModel):
     source_id: str = Field(...)
     title: str | None = None
@@ -81,3 +80,7 @@ class DocumentChunk(BaseModel):
 class EmbeddedChunk(DocumentChunk):
     """A documentChunk augmented with its own vector representation"""
     vector: list[float] = Field(...)
+
+class RAGResponseModel(BaseModel):
+    answer: str
+    used_chunks: list[EmbeddedChunk] = Field(default_factory=list)

@@ -21,3 +21,6 @@ class IngestedDocument(BaseModel):
     character_encoding: str
     tags: list[str] = Field(default_factory=list)
     match_conditions: dict[str, Any] = Field(default_factory=dict)
+
+class UserQueryRequest(BaseModel):
+    user_query: str = Field(default_factory=str)
