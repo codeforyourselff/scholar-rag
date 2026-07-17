@@ -1,5 +1,5 @@
 from app.domain.models import DocumentChunk, EmbeddedChunk
-from app.domain.ports.embedder import EmbedderPort
+from app.domain.ports.embedder_port import EmbedderPort
 
 class FakeEmbedder(EmbedderPort):
     def embed_chunks(self,chunks:list[DocumentChunk]) -> list[EmbeddedChunk]:
