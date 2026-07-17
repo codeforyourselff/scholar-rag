@@ -9,5 +9,4 @@ class ValidationErrorDetail(BaseModel):
 class ErrorResponseModel(BaseModel):
     status_code: int
     error_code: str
-    details: list[ValidationErrorDetail] | None
-
+    details: list[ValidationErrorDetail] | None = None

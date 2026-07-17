@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter
 from fastapi import Depends
 from app.api.deps import get_rag_use_case
-from app.api.schemas import UserQueryRequest
+from app.api.schema import UserQueryRequest
 from app.modules.rag.service import RAGUseCase
 from app.domain.models import RAGResponseModel
 
