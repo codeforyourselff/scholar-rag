@@ -1,13 +1,19 @@
 import asyncio
 import logging
 import asyncpg
-from app.config import Settings, get_settings
+from typing import cast
+from openai import AsyncOpenAI
+from app.adapters.embedder_adapter import EmbedderAdapter
+from app.config import AppEnvironment, Settings, get_settings
 from redis.asyncio import Redis
 from qdrant_client import AsyncQdrantClient
 from sentence_transformers import SentenceTransformer
 from app.adapters.qdrant_adapter import QdrantAdapter
-from openai import AsyncOpenAI
+from app.domain.ports.vector_store_port import VectorStorePort
+from app.modules.ingestion.chunking import TokenChunker
+from app.modules.ingestion.service import DocumentIngestionService
 from app.modules.retrieval.service import DocumentRetrievalService
+from app.tests.unit.fake_vector_store import FakeVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +59,11 @@ class Container:
         logger.info("Starting container (env=%s)",settings.environment.value)
 
         # Qdrant
-        self._qdrant = AsyncQdrantClient(
-            url=settings.qdrant.host,
-            api_key=settings.qdrant.api_key.get_secret_value() if settings.qdrant.api_key else None
-        )
+        if self.settings.environment != AppEnvironment.local:
+            self._qdrant = AsyncQdrantClient(
+                url=settings.qdrant.url,
+                api_key=settings.qdrant.api_key.get_secret_value() if settings.qdrant.api_key else None
+            )
 
         # Redis
         self._redis = Redis.from_url(settings.redis.url, decode_responses=True)
@@ -98,8 +105,9 @@ class Container:
         checks :dict[str,bool] = {}
 
         try:
-            await self.qdrant.get_collections()
-            checks["qdrant"]  = True
+            if self.settings.environment != AppEnvironment.local:
+                await self.qdrant.get_collections()
+                checks["qdrant"]  = True
         except Exception:
             checks["qdrant"] = False
 
@@ -118,9 +126,23 @@ class Container:
         checks["embedder"] = self._embedder is not None
         return checks
     
-    def get_document_retrieval_service(self)-> DocumentRetrievalService:
-        adapter: QdrantAdapter = QdrantAdapter(client=self.qdrant,collection_name=self._settings.qdrant.collection)
-        return DocumentRetrievalService(vector_store=adapter) # type: ignore
+    # def get_document_retrieval_service(self)-> DocumentRetrievalService:
+    #     adapter: QdrantAdapter = QdrantAdapter(client=self.qdrant,collection_name=self._settings.qdrant.collection)
+    #     embedder: EmbedderAdapter = EmbedderAdapter
+    #     return DocumentRetrievalService(vector_store=adapter,)
+
+    def get_document_ingestion_service(self) -> DocumentIngestionService:
+        token_chunker: TokenChunker = TokenChunker(chunk_size=500, chunk_overlap=50, model_name="cl100k_base")
+        embedder_adapter: EmbedderAdapter = EmbedderAdapter(client=self.embedder)
+        if self.settings.environment == AppEnvironment.local:
+            qdrant_adapter: VectorStorePort = FakeVectorStore()
+        else:
+            qdrant_adapter = cast(VectorStorePort, QdrantAdapter(
+                client=self.qdrant,
+                collection_name=self.settings.qdrant.collection
+            ))
+        return DocumentIngestionService(embedder=embedder_adapter, vector_store=qdrant_adapter, chunker=token_chunker, batch_size=500)
+
 
 def build_container(settings:Settings) -> Container:
     return Container(settings)

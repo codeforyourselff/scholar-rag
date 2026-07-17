@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.exception import register_exception_handlers
 from app.api.routes import document, rag
 from app.config import Settings, get_settings
 from app.container import Container, build_container
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI)-> AsyncIterator[None]:
     await __container.startup()
     app.state.container = __container
     try:
+
         yield
     finally:
         await __container.shutdown()
@@ -57,6 +59,9 @@ def create_application(settings: Settings) -> FastAPI:
         allow_headers=["*"]
     )
 
+    # Register global exception handler
+    register_exception_handlers(app=app)
+
     # Router main entry point
     app.include_router(document.router, prefix="/api")
     app.include_router(rag.router, prefix="/api/rag")
@@ -81,10 +86,6 @@ def create_application(settings: Settings) -> FastAPI:
 # Create the FastAPI application
 settings: Settings = get_settings()
 app: FastAPI = create_application(settings)
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Scholar RAG Web App!"}
 
 # Run the application
 if __name__ == "__main__":
