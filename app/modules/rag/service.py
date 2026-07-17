@@ -1,5 +1,5 @@
 from app.domain.models import RAGResponseModel
-from app.domain.ports.embedder import EmbedderPort
+from app.domain.ports.embedder_port import EmbedderPort
 from app.domain.ports.llm import LLMPort
 from app.domain.ports.vector_store_port import VectorStorePort
 from app.modules.rag.prompt_builder import SecurePromptBuilder
