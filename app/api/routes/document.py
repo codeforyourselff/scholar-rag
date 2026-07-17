@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from uvicorn.config import logger
 from app.api.deps import get_retrieval_service
-from app.api.schemas import SearchQuery
+from app.api.schema import SearchQuery
 from app.domain.models import EmbeddedChunk
 from app.modules.retrieval.service import DocumentRetrievalService
 
