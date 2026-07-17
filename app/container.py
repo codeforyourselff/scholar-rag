@@ -90,7 +90,7 @@ class Container:
             await self._redis.close()
         if self._pg_pool is not None:
             await self.pg_pool.close()
-        if self._llm is not None and hasattr(self._llm, " close"):
+        if self._llm is not None and hasattr(self._llm, "close"):
             await self._llm.close()
         logger.info("Container shut down")
 
@@ -118,7 +118,7 @@ class Container:
         checks["embedder"] = self._embedder is not None
         return checks
     
-    def get_qdrant_vector_adapter(self)-> DocumentRetrievalService:
+    def get_document_retrieval_service(self)-> DocumentRetrievalService:
         adapter: QdrantAdapter = QdrantAdapter(client=self.qdrant,collection_name=self._settings.qdrant.collection)
         return DocumentRetrievalService(vector_store=adapter) # type: ignore
 
