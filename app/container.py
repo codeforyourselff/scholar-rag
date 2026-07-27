@@ -12,7 +12,6 @@ from app.adapters.qdrant_adapter import QdrantAdapter
 from app.domain.ports.vector_store_port import VectorStorePort
 from app.modules.ingestion.chunking import TokenChunker
 from app.modules.ingestion.service import DocumentIngestionService
-from app.modules.retrieval.service import DocumentRetrievalService
 from app.tests.unit.fake_vector_store import FakeVectorStore
 
 logger = logging.getLogger(__name__)

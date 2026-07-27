@@ -6,6 +6,8 @@ uvicorn[standard]==0.34.0        # [standard] adds uvloop + httptools for throug
 pydantic==2.10.4
 pydantic-settings==2.7.0
 python-dotenv==1.0.1             # used by pydantic-settings to parse .env
+tiktoken>=0.7.0
+python-multipart>=0.0.12
  
 # --- Datastores / clients ---
 asyncpg==0.30.0                  # Postgres
