@@ -22,7 +22,7 @@ class DocumentIngestionService:
         await self.vector_store.upsert(__embedder_chunks)
         return len(batch)
     
-    async def execute(self,text_stream: Iterator[str],metadata:DocumentMetaData)-> int:
+    async def execute(self, text_stream:Iterator[str], metadata:DocumentMetaData)-> int:
         """At these moment we are converting our text-stream"""
         __current_batch: list[DocumentChunk] = []
         __total_ingested: int = 0
