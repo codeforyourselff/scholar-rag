@@ -20,7 +20,7 @@ async def search_documents(request:SearchQuery, service: DocumentRetrievalServic
         return results
     except Exception as e:
         logger.error({'Message':'Error in search_documents', 'Detail': str(e)}, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occurred while searching documents.{e}")
+        raise HTTPException(status_code=500, detail=f"An error occurred while searching documents.")
 
 @router.post("/ingestion", response_model=int)
 async def ingest_documents(file:UploadFile = File(...),title:str = Form(default=None), author:str = Form(default=None), service:DocumentIngestionService = Depends(get_ingestion_service)):
