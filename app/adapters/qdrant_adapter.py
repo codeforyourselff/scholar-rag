@@ -1,7 +1,7 @@
 from typing import Any
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.http.exceptions import UnexpectedResponse
-from app.domain.exception import DimensionMismatchErrors, PortUnavailibleError
+from app.domain.exception import DimensionMismatchErrors, PortUnavailableError
 from app.domain.models import DocumentMetaData, EmbeddedChunk
 
 class QdrantAdapter:
@@ -26,9 +26,9 @@ class QdrantAdapter:
         except UnexpectedResponse as e:
             if e.status_code == 400 and "dimension" in str(e.content).lower():
                 raise DimensionMismatchErrors(f"Qdrant rejected vector shape: {str(e.content)}") from e
-            raise PortUnavailibleError(f"Qdrant HTTP Error: {str(e.content)}") from e
+            raise PortUnavailableError(f"Qdrant HTTP Error: {str(e.content)}") from e
         except Exception as e:
-            raise PortUnavailibleError(f"Failed to connect to Qdrant: {str(e)}") from e
+            raise PortUnavailableError(f"Failed to connect to Qdrant: {str(e)}") from e
         
     async def search(self,query: list[float], limit: int, meta_data: dict[str,Any] | None = None) -> list[EmbeddedChunk]:
         try:
@@ -57,7 +57,7 @@ class QdrantAdapter:
                 ))
             return results
         except Exception as e:
-            raise PortUnavailibleError(f"Qdrant search failed: {str(e)}") from e
+            raise PortUnavailableError(f"Qdrant search failed: {str(e)}") from e
 
 
 

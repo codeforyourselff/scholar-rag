@@ -46,4 +46,4 @@ class EmbeddedChunk(DocumentChunk):
 
 class RAGResponseModel(BaseModel):
     answer: str
-    used_chunks: list[EmbeddedChunk] = Field(default_factory=list)
+    sources: list[EmbeddedChunk]

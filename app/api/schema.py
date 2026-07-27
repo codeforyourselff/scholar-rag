@@ -1,7 +1,7 @@
+from typing import Any
+from functools import lru_cache
 from pydantic import BaseModel, Field
 from app.config import Settings, get_settings
-from functools import lru_cache
-from typing import Any, Optional
 
 @lru_cache
 def get_config() -> Settings:
