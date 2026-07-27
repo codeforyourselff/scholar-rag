@@ -1,10 +1,9 @@
 from typing import Protocol
-from app.domain.models import RAGResponseModel
 
 class LLMPort(Protocol):
     """Port for interacting with a large language model (LLM)."""
 
-    async def generate_text(self, prompt: str, max_tokens: int = 100) -> str:
+    async def generate(self, system_prompt: str, user_query: str) -> str:
         """Generate text based on the given prompt."""
         ...
 
