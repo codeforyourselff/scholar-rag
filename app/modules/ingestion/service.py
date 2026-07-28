@@ -17,7 +17,7 @@ class DocumentIngestionService:
             return 0
 
         __texts = [single_chunk.text for single_chunk in batch]
-        __vectors = await self.embedder.embeded(chunks=__texts)
+        __vectors = await self.embedder.embed(user_query=__texts)
         __embedder_chunks = [EmbeddedChunk(**chunk.model_dump(),vector=vector) for chunk,vector in zip(batch,__vectors)]
         await self.vector_store.upsert(__embedder_chunks)
         return len(batch)

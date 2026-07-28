@@ -1,4 +1,4 @@
-# Stage 1 - Build dependencies
+    # Stage 1 - Build dependencies
 FROM python:3.12-slim AS builder
 
 ENV PYTHONDONOTWRITEBYTECODE=1 \
@@ -24,6 +24,10 @@ FROM python:3.12-slim AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libmagic1 \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home --uid 1000 appuser
 

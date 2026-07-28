@@ -1,9 +1,9 @@
 import logging
-from app.modules.generation.service import RAGUseCase
 from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import get_rag_use_case
 from app.api.schema import UserQueryRequest
 from app.domain.models import RAGResponseModel
+from app.modules.generation.service import RAGUseCase
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/rag", tags=["Retrieval"])

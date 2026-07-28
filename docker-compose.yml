@@ -64,9 +64,10 @@ services:
     ports:
       - "${FASTAPI_PORT}:${FASTAPI_PORT}"
     environment:
+      QDRANT__HOST: qdrant
+      QDRANT__PORT: ${QDRANT_PORT}
       POSTGRES__HOST: postgres
       REDIS__HOST: redis
-      QDRANT__HOST: qdrant
     depends_on:
       postgres:
         condition: service_healthy

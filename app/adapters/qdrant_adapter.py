@@ -10,6 +10,11 @@ class QdrantAdapter:
         self.collection_name = collection_name
 
     async def upsert(self, chunks:list[EmbeddedChunk])-> None:
+        if not self.collection_name:
+            raise ValueError(f"Collection name is not defined.{self.collection_name}")
+
+        if not await self.client.collection_exists(collection_name=self.collection_name):
+            raise ValueError(f"Collection {self.collection_name} does not exists.")
         try:
             qdrant_point = [models.PointStruct(
                 id=chunk.chunk_id,
