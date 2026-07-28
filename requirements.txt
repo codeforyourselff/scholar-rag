@@ -8,6 +8,7 @@ pydantic-settings==2.7.0
 python-dotenv==1.0.1             # used by pydantic-settings to parse .env
 tiktoken>=0.7.0
 python-multipart>=0.0.12
+python-magic==0.4.27
  
 # --- Datastores / clients ---
 asyncpg==0.30.0                  # Postgres

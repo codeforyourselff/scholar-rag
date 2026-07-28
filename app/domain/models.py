@@ -1,7 +1,7 @@
-import hashlib
+import uuid
+from enum import StrEnum
 from typing import Any
-from pydantic import BaseModel, Field, computed_field, model_validator
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field, ConfigDict, HttpUrl, computed_field, model_validator
 
 class SearchParams(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -22,12 +22,20 @@ class SearchResult(BaseModel):
         if self.score > 1.0 or self.score < 0.1:
             raise ValueError(f"Score should be between given range")
         return self
+    
+class SourceType(StrEnum):
+    PDF = "pdf"
+    URL = "url"
+    TEXT = "text"
+    MARKDOWN = "markdown"
 
 class DocumentMetaData(BaseModel):
     model_config = ConfigDict(frozen=True)
     source_id: str = Field(...)
+    source_type:SourceType
     title: str | None = None
-    author: str | None = None
+    authors: list[str] | None = Field(default_factory=list, description="List of author names.")
+    abstract:str = Field(default="", max_length=5000)
 
 class DocumentChunk(BaseModel):
     text: str = Field(...,min_length=1)
@@ -38,7 +46,7 @@ class DocumentChunk(BaseModel):
     def chunk_id(self) -> str:
         """The idempotency key"""
         unique_string=f"{self.metadata.source_id}_{self.chunk_index}_{self.text}"
-        return hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
+        return str(uuid.uuid5(uuid.NAMESPACE_OID, unique_string))
 
 class EmbeddedChunk(DocumentChunk):
     """A documentChunk augmented with its own vector representation"""
@@ -47,3 +55,26 @@ class EmbeddedChunk(DocumentChunk):
 class RAGResponseModel(BaseModel):
     answer: str
     sources: list[EmbeddedChunk]
+
+# Defined the models for parsing the files
+class BlockType(StrEnum):
+    heading="heading"
+    paragraph="paragraph"
+    equation="equation"
+    table="table"
+
+class DocumentBlock(BaseModel):
+    type: BlockType
+    text: str = Field(min_length=1)
+
+class Citation(BaseModel):
+    inline_text: str = Field(min_length=1)
+    page_number:int | None = Field(default=None,gt=0)
+    source_url:HttpUrl | None  = Field(default=None)
+
+class ParsedDocument(BaseModel):
+    document_id:str = Field(min_length=1)
+    metadata:DocumentMetaData
+    document_blocks: list[DocumentBlock] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
+
