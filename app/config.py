@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated, Literal
 from functools import lru_cache
-from pydantic import AnyUrl, BaseModel, Field, SecretStr, model_validator
+from pydantic import AnyUrl, BaseModel, Field, SecretStr, model_validator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic.networks import UrlConstraints
 
@@ -12,7 +12,7 @@ class AppEnvironment(str, Enum):
 
 # Configuration for Qdrant vector database
 class QdrantSettings(BaseModel):
-    host : str = "localhost" 
+    host : str = "qdrant" 
     port : int = 6333
     api_key : SecretStr | None = None
     collection : str = "scholar_rag"
@@ -20,7 +20,7 @@ class QdrantSettings(BaseModel):
     https : bool = False
     search_limit: int = 5
 
-    @property
+    @computed_field
     def url(self) -> str:
         __scheme = "https" if self.https else "http"
         return f"{__scheme}://{self.host}:{self.port}"
@@ -55,7 +55,7 @@ class RedisSettings(BaseModel):
 
 # Configuration for the embedding model
 class EmbedderSettings(BaseModel):
-    model_name : str = "sentence-transformers/all-MiniLM-L6-v2"
+    model_name : str = "all-MiniLM-L6-v2"
     dim: int = 384
     batch_size: int = 64
     device: str = "cpu"
@@ -88,7 +88,7 @@ QdrantDsn = Annotated[
 # Main application settings
 class Settings(BaseSettings):
     """Root settings object — the single source of truth for the app."""
-    environment : AppEnvironment = AppEnvironment.local
+    environment : AppEnvironment = AppEnvironment.development
     log_level : Literal["INFO","Trace","Debug","Warn","Error","Fatal"] = "INFO"
     service_name : str = "scholar-rag"
     version : str = "0.1.0"

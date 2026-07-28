@@ -25,10 +25,10 @@ class AIServiceException(Exception):
         self.retryable = retryable
 
 class LLMServiceError(AIServiceException):
-    """Base exception for OpenAI API failures."""
+    """Base exception for LLM API failures."""
 
 class LLMAuthenticationError(LLMServiceError):
-    """Raised when the OpenAI API credentials are invalid."""
+    """Raised when the LLM API credentials are invalid."""
 
 class LLMAuthorizationError(LLMServiceError):
     """Raised when the caller lacks permission to use the requested model or resource."""
@@ -37,13 +37,13 @@ class LLMValidationError(LLMServiceError):
     """Raised when the request payload or parameters are invalid."""
 
 class LLMRateLimitError(LLMServiceError):
-    """Raised when the OpenAI API rate limit is exceeded."""
+    """Raised when the LLM API rate limit is exceeded."""
 
 class LLMConnectionError(LLMServiceError):
-    """Raised when the OpenAI service cannot be reached."""
+    """Raised when the LLM service cannot be reached."""
 
 class LLMUnexpectedError(LLMServiceError):
-    """Raised for unexpected or unclassified OpenAI failures."""
+    """Raised for unexpected or unclassified LLM failures."""
 
 # Backward-compatible aliases for existing imports.
 PortUnavailibleError = PortUnavailableError
