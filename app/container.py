@@ -1,34 +1,31 @@
 import asyncio
-import logging
-from app.adapters.in_memory.fake_llm_adapter import FakeLLMAdapter
-from app.adapters.llm_adapter import LLMAdapter
-from app.adapters.parser_adapter import MarkerParserAdapter
-from app.domain.ports.embedder_port import EmbedderPort
-from app.modules.generation.prompt_builder import SecurePromptBuilder
-from app.modules.generation.service import RAGUseCase
-from app.modules.ingestion.academic_service import AcademicIngestionUseCase
 import asyncpg
-from typing import cast
+import logging
 from openai import AsyncOpenAI
-from app.config import AppEnvironment, Settings, get_settings
 from redis.asyncio import Redis
 from qdrant_client import AsyncQdrantClient
 from sentence_transformers import SentenceTransformer
+from app.config import AppEnvironment, Settings, get_settings
+from app.adapters.llm_adapter import LLMAdapter
+from app.adapters.parser_adapter import MarkerParserAdapter
 from app.adapters.qdrant_adapter import QdrantAdapter
 from app.adapters.embedder_adapter import EmbedderAdapter
-from app.domain.ports.llm_port import LLMPort
-from app.domain.ports.vector_store_port import VectorStorePort
-from app.domain.ports.parser_port import DocumentParserPort
+from app.adapters.in_memory.fake_llm_adapter import FakeLLMAdapter
+from app.modules.generation.service import RAGUseCase
+from app.modules.generation.prompt_builder import SecurePromptBuilder
+from app.modules.ingestion.academic_service import AcademicIngestionUseCase
 from app.modules.retrieval.service import DocumentRetrievalService
 from app.modules.ingestion.service import DocumentIngestionService
 from app.modules.ingestion.chunking import TokenChunker
+from app.domain.ports.parser_port import DocumentParserPort
+from app.domain.ports.vector_store_port import VectorStorePort
 from app.tests.unit.fake_vector_store import FakeVectorStore
 
 logger = logging.getLogger(__name__)
 
 class Container:
-    def __init__(self,settings:Settings = get_settings()) -> None:
-        self._settings=settings or get_settings()
+    def __init__(self, settings:Settings) -> None:
+        self._settings= get_settings()
         self._qdrant: AsyncQdrantClient | None = None
         self._redis : Redis | None = None
         self._pg_pool: asyncpg.Pool | None = None
@@ -151,10 +148,10 @@ class Container:
         if self.settings.environment == AppEnvironment.local:
             qdrant_adapter: VectorStorePort = FakeVectorStore()
         else:
-            qdrant_adapter = cast(VectorStorePort, QdrantAdapter(
+            qdrant_adapter = QdrantAdapter(
                 client=self.qdrant,
                 collection_name=self.settings.qdrant.collection
-            ))
+            )
         return DocumentIngestionService(embedder=embedder_adapter, vector_store=qdrant_adapter, chunker=token_chunker, batch_size=500)
 
     def get_rag_use_case(self) -> RAGUseCase:
@@ -177,6 +174,18 @@ class Container:
 
         return AcademicIngestionUseCase(parser=parser,embedder=embedder_adapter,vector_store=qdrant_adapter)
 
+_container_instance: Container | None = None
 
-def build_container(settings:Settings) -> Container:
-    return Container(settings)
+def get_container(settings:Settings) -> Container:
+    global _container_instance
+
+    if _container_instance is not None:
+        return _container_instance
+
+    if settings is None:
+        raise RuntimeError("Container is uninitialized. You must provide Settings on the first call.")
+
+    _container_instance = Container(settings=settings)
+    return _container_instance
+
+    

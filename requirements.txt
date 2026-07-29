@@ -13,6 +13,7 @@ python-magic==0.4.27
 # --- Datastores / clients ---
 asyncpg==0.30.0                  # Postgres
 redis==5.2.1                     # Redis (async via redis.asyncio)
+celery[redis]==5.6.3             # task queue; Redis broker/backend support
 qdrant-client==1.12.1            # Qdrant vector store
  
 # --- Models / LLM ---

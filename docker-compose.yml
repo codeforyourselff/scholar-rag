@@ -32,7 +32,7 @@ services:
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping"]
       interval: ${REDIS_INTERVAL}
       timeout: ${REDIS_TIMEOUT}
       retries: ${REDIS_RETRIES}
@@ -55,6 +55,17 @@ services:
         limits:
           cpus: ${QDRANT_CPU_LIMIT}
           memory: ${QDRANT_MEMORY_LIMIT}
+  celery_worker:
+    build: .
+    command: celery -A app.core.celery.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - .:/code
+    environment:
+      - PYTHONPATH=/code
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT}/0
+    depends_on:
+      - redis
+      - qdrant
   api:
     build: .
     env_file:

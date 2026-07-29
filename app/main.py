@@ -2,7 +2,7 @@
 import os
 import uvicorn
 import logging
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 from fastapi.responses import JSONResponse
@@ -10,27 +10,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.exception import register_exception_handlers
 from app.api.routes import document, rag
 from app.config import Settings, get_settings
-from app.container import Container, build_container
+from app.container import Container, get_container
 logger = logging.getLogger(__name__)
 
-def get_container(request: Request) -> Container:
-    """Dependency: pull the wired container off app.state (built during lifespan)."""
-    __app : FastAPI = request.app
-    return __app.state.container
+def inject_container() -> Container:
+    return get_container(settings=get_settings())
 
 # manage the lifecycle of external resources (e.g., database connections, background tasks)
 @asynccontextmanager
 async def lifespan(app: FastAPI)-> AsyncIterator[None]:
     # Startup logic here
-    __settings: Settings = app.state.settings
-    __container: Container = build_container(__settings)
-    await __container.startup()
-    app.state.container = __container
+    settings: Settings = app.state.settings
+    container: Container = get_container(settings)
+    await container.startup()
+    logger.info("Application lifecycle started. Container wired.")
     try:
-
         yield
     finally:
-        await __container.shutdown()
+        await container.shutdown()
+        logger.info("Application lifecycle terminated. Resources released.")
 
 # Function to create the FastAPI application
 
@@ -89,4 +87,4 @@ app: FastAPI = create_application(settings)
 
 # Run the application
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("FASTAPI_PORT", 8000)))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=int(os.getenv("FASTAPI_PORT", 8000)), reload=settings.environment == "local")
