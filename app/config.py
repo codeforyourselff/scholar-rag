@@ -42,7 +42,7 @@ class PostgresSettings(BaseModel):
 
 # Configuration for Redis
 class RedisSettings(BaseModel):
-    host : str = "localhost"
+    host : str = "redis"
     port : int = 6379
     db : int = 0
     password : SecretStr | None = None
@@ -68,6 +68,15 @@ class LLMSettings(BaseModel):
     base_url : str | None = None
     max_tokens : int = 2048
     temperature : float = 0.0
+
+class CeleryAppSettings(BaseModel):
+    task_serializer:str = "json"
+    result_serializer: str = "json"
+    accept_content: list[str] = ["json"]
+    timezone: str = "UTC"
+    enable_utc:bool = True
+    broker_url: str
+    result_backend: str
 
 # Configuration for the API server
 class ApiSettings(BaseModel):
@@ -109,6 +118,7 @@ class Settings(BaseSettings):
     redis : RedisSettings = Field(default_factory=RedisSettings)
     embedder : EmbedderSettings = Field(default_factory=EmbedderSettings)
     llm : LLMSettings = Field(default_factory=LLMSettings)
+    celery:CeleryAppSettings = Field(default_factory=CeleryAppSettings)
     api : ApiSettings = Field(default_factory=ApiSettings)
 
     @property
