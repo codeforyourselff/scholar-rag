@@ -7,17 +7,14 @@ from qdrant_client import AsyncQdrantClient
 from sentence_transformers import SentenceTransformer
 from app.config import AppEnvironment, Settings, get_settings
 from app.adapters.llm_adapter import LLMAdapter
-from app.adapters.parser_adapter import MarkerParserAdapter
 from app.adapters.qdrant_adapter import QdrantAdapter
 from app.adapters.embedder_adapter import EmbedderAdapter
 from app.adapters.in_memory.fake_llm_adapter import FakeLLMAdapter
 from app.modules.generation.service import RAGUseCase
 from app.modules.generation.prompt_builder import SecurePromptBuilder
-from app.modules.ingestion.academic_service import AcademicIngestionUseCase
 from app.modules.retrieval.service import DocumentRetrievalService
 from app.modules.ingestion.service import DocumentIngestionService
 from app.modules.ingestion.chunking import TokenChunker
-from app.domain.ports.parser_port import DocumentParserPort
 from app.domain.ports.vector_store_port import VectorStorePort
 from app.tests.unit.fake_vector_store import FakeVectorStore
 
@@ -163,16 +160,24 @@ class Container:
             llm_adapter = LLMAdapter(client=self._llm,model_name="gpt-4o-mini")
         return RAGUseCase(llm_port=llm_adapter,service=self.get_document_retrieval_service(),prompt_builder=secure_prompt_builder)
 
-    def get_academic_ingestion_service(self) -> AcademicIngestionUseCase:
-        embedder_adapter: EmbedderAdapter = EmbedderAdapter(client=self.embedder)
-        parser: DocumentParserPort = MarkerParserAdapter()
+    # def get_academic_ingestion_service(self) -> AcademicIngestionUseCase:
+    #     embedder_adapter: EmbedderAdapter = EmbedderAdapter(client=self.embedder)
+    #     # INJECT THE SUBPROCESS WRAPPER, NOT THE AI MODELS
+    #     parser: DocumentParserPort = SubprocessParserAdapter()
 
-        if self.settings.environment == AppEnvironment.local:
-            qdrant_adapter = FakeVectorStore()
-        else:
-            qdrant_adapter = QdrantAdapter(client=self.qdrant,collection_name=self.settings.qdrant.collection)
+    #     if self.settings.environment == AppEnvironment.local:
+    #         qdrant_adapter = FakeVectorStore()
+    #     else:
+    #         qdrant_adapter = QdrantAdapter(
+    #             client=self.qdrant,
+    #             collection_name=self.settings.qdrant.collection
+    #         )
 
-        return AcademicIngestionUseCase(parser=parser,embedder=embedder_adapter,vector_store=qdrant_adapter)
+    #     return AcademicIngestionUseCase(
+    #         parser=parser,
+    #         embedder=embedder_adapter,
+    #         vector_store=qdrant_adapter
+    #     )
 
 _container_instance: Container | None = None
 
