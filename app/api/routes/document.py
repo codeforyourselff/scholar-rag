@@ -123,4 +123,3 @@ async def get_ingestion_status(job_id: str):
             "status": task_result.state, 
             "error": str(task_result.info)
         }
-    
