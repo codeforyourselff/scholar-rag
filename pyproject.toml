@@ -18,11 +18,13 @@ dependencies = [
     "redis==5.2.1",
     "celery[redis]==5.6.3",
     "qdrant-client==1.12.1",
-    "sentence-transformers==3.3.1",
-    "openai==1.59.9",
+    "sentence-transformers>=5.0.0",
+    "openai>=2.2.0,<3",
     "tiktoken>=0.7.0",
     "python-multipart>=0.0.12",
-    "python-magic==0.4.27"
+    "python-magic==0.4.27",
+    "marker-pdf==2.0.0",
+    "pymupdf==1.25.3"
 ]
 
 [tool.ruff]
