@@ -14,16 +14,17 @@ class AcademicIngestionUseCase:
         type_prefix = str(block.type.value).upper()
         return f"Type: {type_prefix}\nContent: {block.text}"
 
-    async def process_file(self, file_path: str) -> int:
-        parsed_doc:ParsedDocument = await self.parser.parse(file_path=file_path)
+    async def process_file(self, file_path: str) -> dict:
+        parsed_doc:ParsedDocument = await self.parser.parse_file(file_path=file_path)
 
         if not parsed_doc.document_blocks:
-            return 0
+            return {"status": "FAILED", "reason": "Parser does not return the document_blocks"}
 
-        formatted_texts: list[str] = [
-            self._format_semantic_block(block) 
-            for block in parsed_doc.document_blocks
-        ]
+        if parsed_doc["status"] == "FAILED":
+            return {"status": "FAILED", "reason": "Parser crashed completely"}
+
+        # 2. Chunk the Markdown structurally
+        chunks = self.chunker.chunk_document(parsed_doc)
 
         # 3. Batch generate dense vector embeddings across boundary interfaces
         vectors: list[list[float]] = await self.embedder.embed(user_query=formatted_texts)

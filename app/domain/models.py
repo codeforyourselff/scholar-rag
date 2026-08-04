@@ -62,19 +62,35 @@ class BlockType(StrEnum):
     paragraph="paragraph"
     equation="equation"
     table="table"
+    page="page"
 
 class DocumentBlock(BaseModel):
+    block_id: str = Field(default_factory="")
     type: BlockType
-    text: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    metadata: dict = Field(default_factory=dict)
 
 class Citation(BaseModel):
-    inline_text: str = Field(min_length=1)
-    page_number:int | None = Field(default=None,gt=0)
-    source_url:HttpUrl | None  = Field(default=None)
+    inline_marker: str = Field(description="e.g., [1] or (Smith, 2022)")
+    raw_reference: str = Field(description="The full bibliography text entry")
+    page_number: int | None = Field(default=None, gt=0)
+
+class DocumentMetaData(BaseModel):
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    pages_recovered: int = Field(ge=0)
+    parser_exit_code: int
 
 class ParsedDocument(BaseModel):
-    document_id:str = Field(min_length=1)
-    metadata:DocumentMetaData
+    document_id: str = Field(min_length=1)
+    metadata: DocumentMetaData
     document_blocks: list[DocumentBlock] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
+    status: str = Field(default_factory="PARTIAL_SUCCESS")
+
+class Chunk(BaseModel):
+    chunk_id: str
+    document_id: str
+    content: str
+    token_count: int
+    page_range: list[int]
 

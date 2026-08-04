@@ -5,11 +5,11 @@ from celery import Celery
 import magic
 from celery.result import AsyncResult
 from uvicorn.config import logger
+from app.api.schema import SearchQuery
 from app.core.celery import celery_app
 from app.modules.ingestion.loaders import TextStreamingLoader
 from app.modules.ingestion.service import DocumentIngestionService
 from app.api.deps import get_ingestion_service, get_retrieval_service
-from app.api.schema import SearchQuery
 from app.domain.models import DocumentMetaData, EmbeddedChunk
 from app.modules.retrieval.service import DocumentRetrievalService
 from app.workers.ingestion_worker import process_academic_file_task
