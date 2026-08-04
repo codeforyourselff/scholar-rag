@@ -1,6 +1,5 @@
 import subprocess
 import resource
-import sys
 import os
 import time
 import select

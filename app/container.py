@@ -1,4 +1,7 @@
 import asyncio
+from app.adapters.subprocess_parser_adapter import SubprocessParserAdapter
+from app.domain.ports.parser_port import DocumentParserPort
+from app.modules.ingestion.academic_service import AcademicIngestionUseCase
 import asyncpg
 import logging
 from openai import AsyncOpenAI
@@ -160,24 +163,16 @@ class Container:
             llm_adapter = LLMAdapter(client=self._llm,model_name="gpt-4o-mini")
         return RAGUseCase(llm_port=llm_adapter,service=self.get_document_retrieval_service(),prompt_builder=secure_prompt_builder)
 
-    # def get_academic_ingestion_service(self) -> AcademicIngestionUseCase:
-    #     embedder_adapter: EmbedderAdapter = EmbedderAdapter(client=self.embedder)
-    #     # INJECT THE SUBPROCESS WRAPPER, NOT THE AI MODELS
-    #     parser: DocumentParserPort = SubprocessParserAdapter()
+    def get_academic_ingestion_service(self) -> AcademicIngestionUseCase:
+        embedder_adapter = EmbedderAdapter(client=self.embedder)
+        # INJECT THE WRAPPER, NOT THE AI MODELS
+        parser: DocumentParserPort = SubprocessParserAdapter()
+        if self.settings.environment == AppEnvironment.local:
+            qdrant_adapter = FakeVectorStore()
+        else:
+            qdrant_adapter = QdrantAdapter(client=self.qdrant,collection_name=self.settings.qdrant.collection)
 
-    #     if self.settings.environment == AppEnvironment.local:
-    #         qdrant_adapter = FakeVectorStore()
-    #     else:
-    #         qdrant_adapter = QdrantAdapter(
-    #             client=self.qdrant,
-    #             collection_name=self.settings.qdrant.collection
-    #         )
-
-    #     return AcademicIngestionUseCase(
-    #         parser=parser,
-    #         embedder=embedder_adapter,
-    #         vector_store=qdrant_adapter
-    #     )
+        return AcademicIngestionUseCase(parser=parser,embedder=embedder_adapter,vector_store=qdrant_adapter)
 
 _container_instance: Container | None = None
 
