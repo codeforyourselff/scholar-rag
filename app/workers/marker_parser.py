@@ -35,6 +35,11 @@ class MarkerParserAdapter:
             model_dict = create_model_dict()
             self.converter = PdfConverter(
                 artifact_dict=model_dict,
+                config={
+                    "mode": "fast",
+                    "disable_ocr": True,
+                    "page_range": [0],
+                },
             )
         except Exception as e:
             self._emit_json({"status": "INIT_FAILED", "error": str(e)})

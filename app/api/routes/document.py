@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+import uuid
 from celery import Celery
 import magic
 from celery.result import AsyncResult
@@ -13,8 +14,11 @@ from app.api.deps import get_ingestion_service, get_retrieval_service
 from app.domain.models import DocumentMetaData, EmbeddedChunk
 from app.modules.retrieval.service import DocumentRetrievalService
 from app.workers.ingestion_worker import process_academic_file_task
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, status
 
+
+STAGING_DIR = "/tmp/scholar_rag_staging"
+os.makedirs(STAGING_DIR,exist_ok=True)
 
 """Search query router api endpoint"""
 router = APIRouter(prefix="/query", tags=["Retrieval"])
@@ -59,37 +63,35 @@ async def ingest_documents(file:UploadFile = File(...),title:str = Form(default=
         if 'temp_path' in locals() and os.path.exists(temp_path):
             os.remove(temp_path)
 
-@router.post("/ingestion_academic", response_model=dict)
-async def ingestion_academic(file:UploadFile = File(...)):
+@router.post("/ingestion_academic", status_code=status.HTTP_202_ACCEPTED)
+async def ingestion_academic(tenant_id: str, file:UploadFile = File(...)):
+    """Accepts a PDF upload, saves it to staging/prod and dispatches the Celery parsing task..."""
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="File name not provided")
 
-    header = file.file.read(2048)
-    mime_type = magic.from_buffer(header,mime=True)
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code = 415, detail="Unsupported media type...")
 
-    #Checking the type of the file
-    if mime_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="File not supported")
-    
-    # reset the cursor to 0 starts from beginning
-    file.file.seek(0)
-    temp_path = None
+    document_id = str(uuid.uuid4())
+    safe_filename = f"{tenant_id}_{document_id}.pdf"
+    file_path = os.path.join(STAGING_DIR, safe_filename)
     try:    
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            shutil.copyfileobj(file.file, tmp)
-            temp_path = tmp.name
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file,buffer)
 
         # Usecase for parsed_doc
-        task = process_academic_file_task.delay(temp_path,"123")
+        task = process_academic_file_task.delay(file_path=file_path,tenant_id=tenant_id)
         return {
             "job_id": task.id,
-            "status": "accepted",
-            "message": "File spooled and queued for background ML processing."
+            "document_id": document_id,
+            "status": "processing",
+            "message": "Document accepted for processing."
         }
 
     except Exception as e:
         logger.error({'Message':'Error in ingest_documents', 'Detail': str(e)}, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occured while ingesting documents.")
+        raise HTTPException(status_code=500, detail=f"An error occured while ingesting documents.{e}")
 
 @router.post("/ingestion_status/{job_id}", response_model=dict)
 async def get_ingestion_status(job_id: str):

@@ -65,7 +65,7 @@ class BlockType(StrEnum):
     page="page"
 
 class DocumentBlock(BaseModel):
-    block_id: str = Field(default_factory="")
+    block_id: str = Field(default="")
     type: BlockType
     content: str = Field(min_length=1)
     metadata: dict = Field(default_factory=dict)
@@ -85,7 +85,7 @@ class ParsedDocument(BaseModel):
     metadata: DocumentMetaData
     document_blocks: list[DocumentBlock] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
-    status: str = Field(default_factory="PARTIAL_SUCCESS")
+    status: str = Field(default="PARTIAL_SUCCESS")
 
 class Chunk(BaseModel):
     chunk_id: str

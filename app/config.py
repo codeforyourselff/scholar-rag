@@ -55,7 +55,7 @@ class RedisSettings(BaseModel):
 
 # Configuration for the embedding model
 class EmbedderSettings(BaseModel):
-    model_name : str = "all-MiniLM-L6-v2"
+    model_name : str = "sentence-transformers/all-MiniLM-L6-v2"
     dim: int = 384
     batch_size: int = 64
     device: str = "cpu"
