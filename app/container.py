@@ -2,6 +2,7 @@ import asyncio
 from app.adapters.subprocess_parser_adapter import SubprocessParserAdapter
 from app.domain.ports.parser_port import DocumentParserPort
 from app.modules.ingestion.academic_service import AcademicIngestionUseCase
+from app.modules.ingestion.semantic_markdown_chunker import SemanticMarkdownChunker
 import asyncpg
 import logging
 from openai import AsyncOpenAI
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class Container:
     def __init__(self, settings:Settings) -> None:
-        self._settings= get_settings()
+        self._settings = settings
         self._qdrant: AsyncQdrantClient | None = None
         self._redis : Redis | None = None
         self._pg_pool: asyncpg.Pool | None = None
@@ -100,12 +101,16 @@ class Container:
         logger.info("Shutting down container")
         if self._qdrant is not None:
             await self._qdrant.close()
+            self._qdrant = None
         if self._redis is not None:
             await self._redis.close()
+            self._redis = None
         if self._pg_pool is not None:
-            await self.pg_pool.close()
+            await self._pg_pool.close()
+            self._pg_pool = None
         if self._llm is not None and hasattr(self._llm, "close"):
             await self._llm.close()
+            self._llm = None
         logger.info("Container shut down")
 
     async def check_readiness(self) -> dict[str,bool]:
@@ -172,7 +177,8 @@ class Container:
         else:
             qdrant_adapter = QdrantAdapter(client=self.qdrant,collection_name=self.settings.qdrant.collection)
 
-        return AcademicIngestionUseCase(parser=parser,embedder=embedder_adapter,vector_store=qdrant_adapter)
+        semantic_markdown_chunker: SemanticMarkdownChunker = SemanticMarkdownChunker(model_name=self.settings.embedder.model_name, max_tokens=250)
+        return AcademicIngestionUseCase(parser=parser,embedder=embedder_adapter,vector_store=qdrant_adapter,chunker=semantic_markdown_chunker)
 
 _container_instance: Container | None = None
 

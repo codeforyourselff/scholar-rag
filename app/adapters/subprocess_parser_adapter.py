@@ -6,7 +6,7 @@ import signal
 import logging
 import resource
 import subprocess
-from app.domain.models import DocumentBlock, DocumentMetaData, ParsedDocument
+from app.domain.models import BlockType, DocumentBlock, DocumentMetaData, ParsedDocument
 from app.domain.ports.parser_port import DocumentParserPort
 
 logger = logging.getLogger(__name__)
@@ -99,25 +99,37 @@ class SubprocessParserAdapter(DocumentParserPort):
             process.wait()
     
         # Evaluate the aftermath
-        exit_code:int = process.returncode
-        final_markdown = "\n\n".join(full_markdown)
+        exit_code: int = process.returncode
         avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.0
 
-        # Map to the Document Blocks( Preserving page boundaries)
+        # Map to the Document Blocks (preserving page boundaries)
         blocks: list[DocumentBlock] = []
         for idx, page_text in enumerate(full_markdown):
             blocks.append(DocumentBlock(
                 block_id=f"page_{idx + 1}",
                 content=page_text,
-                type="page" 
+                type=BlockType.page,
+                metadata={"page_number": idx + 1},
             ))
 
-        # Extract citations (Basic regex or placeholder)
         extracted_citations = self._extract_bibliography(full_markdown[-3:])
 
         if exit_code != 0:
             logger.warning(f"Parser exited abnormally (code {exit_code}). Recovered {len(full_markdown)} pages.")
-            # If exit_code is -9, the OS killed it for hitting the 4GB RAM limit.
+
+        if not blocks:
+            logger.error("Parser produced no page markdown. Returning a failed ParsedDocument.")
+            return ParsedDocument(
+                document_id=file_path.split("/")[-1],
+                metadata=DocumentMetaData(
+                    confidence_score=avg_confidence,
+                    pages_recovered=0,
+                    parser_exit_code=exit_code,
+                ),
+                document_blocks=[],
+                citations=extracted_citations,
+                status="FAILED",
+            )
 
         # Instantiate the domain entity
         return ParsedDocument(
@@ -125,9 +137,9 @@ class SubprocessParserAdapter(DocumentParserPort):
             metadata=DocumentMetaData(
                 confidence_score=avg_confidence,
                 pages_recovered=len(full_markdown),
-                parser_exit_code=exit_code
+                parser_exit_code=exit_code,
             ),
             document_blocks=blocks,
             citations=extracted_citations,
-            status="SUCCESS" if exit_code == 0 else "PARTIAL_SUCCESS"
+            status="SUCCESS" if exit_code == 0 else "PARTIAL_SUCCESS",
         )

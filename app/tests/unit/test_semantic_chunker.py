@@ -1,5 +1,5 @@
-from app.domain.chunking.semantic_chunker import SemanticMarkdownChunker
-from app.domain.models import BlockType, Chunk, DocumentBlock, DocumentMetaData, ParsedDocument
+from app.domain.models import BlockType, DocumentBlock, DocumentMetaData, ParsedDocument
+from app.modules.ingestion.semantic_markdown_chunker import SemanticMarkdownChunker
 
 
 def _block(content: str, block_type: BlockType, page_number: int) -> DocumentBlock:
@@ -12,7 +12,7 @@ def _block(content: str, block_type: BlockType, page_number: int) -> DocumentBlo
 
 
 def test_semantic_chunker_tracks_page_span_across_buffer_growth() -> None:
-    chunker = SemanticMarkdownChunker(chunk_size=250)
+    chunker = SemanticMarkdownChunker(model_name="sentence-transformers/all-MiniLM-L6-v2", max_tokens=250)
     document = ParsedDocument(
         document_id="doc-1",
         metadata=DocumentMetaData(
@@ -33,7 +33,7 @@ def test_semantic_chunker_tracks_page_span_across_buffer_growth() -> None:
 
 
 def test_semantic_chunker_uses_lookahead_anchor_and_preserves_atomic_equation() -> None:
-    chunker = SemanticMarkdownChunker(chunk_size=20)
+    chunker = SemanticMarkdownChunker(model_name="sentence-transformers/all-MiniLM-L6-v2", max_tokens=20)
     document = ParsedDocument(
         document_id="doc-2",
         metadata=DocumentMetaData(
@@ -52,3 +52,15 @@ def test_semantic_chunker_uses_lookahead_anchor_and_preserves_atomic_equation() 
     assert len(chunks) == 1
     assert chunks[0].content.strip().startswith("alpha beta gamma delta")
     assert "$$x = y + z$$" in chunks[0].content
+
+
+def test_split_long_paragraph_splits_on_sentences_not_words() -> None:
+    chunker = SemanticMarkdownChunker(model_name="sentence-transformers/all-MiniLM-L6-v2", max_tokens=10)
+
+    chunks = chunker.split_long_paragraph("This is the first sentence. This is the second sentence. Third sentence here.", 10)
+
+    assert chunks == [
+        "This is the first sentence.",
+        "This is the second sentence.",
+        "Third sentence here.",
+    ]
