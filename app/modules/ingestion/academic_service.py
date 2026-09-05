@@ -1,47 +1,46 @@
+import os
 import logging
-from app.domain.models import EmbeddedChunk, ParsedDocument
-from app.domain.ports.embedder_port import EmbedderPort
+from app.domain.models import ParsedDocument
 from app.domain.ports.parser_port import DocumentParserPort
-from app.domain.ports.vector_store_port import VectorStorePort
-from app.modules.ingestion.semantic_markdown_chunker import SemanticMarkdownChunker
 
 logger = logging.getLogger(__name__)
 
 class AcademicIngestionUseCase:
-    def __init__(self, parser: DocumentParserPort, embedder: EmbedderPort, vector_store: VectorStorePort, chunker: SemanticMarkdownChunker) -> None:
+    def __init__(self,parser:DocumentParserPort) -> None:
         self.parser = parser
-        self.embedder = embedder
-        self.vector_store = vector_store
-        self.chunker = chunker
 
-    async def process_file(self, file_path: str, tenant_id: str) -> dict:
-        if not file_path:
-            return {"message": "File_path not found..."}
-        
-        parsed_doc: ParsedDocument = await self.parser.parse_file(file_path=file_path)
+    def process_file(self, file_path: str, document_id: str) -> dict:
+        logger.info(f"Starting ingestion orchestration for document {document_id}")
 
-        if parsed_doc.status == "FAILED":
-            logger.info("parser has been crashed due to unexpected error...")
-            return {"status": "FAILED", "reason": "Parser crashed...."}
+        # Pre-flight check if the file exists at the given file_path. If not, raise a FileNotFoundError.
+        if not os.path.exists(file_path):
+            logger.error(f"File not found: {file_path}")
+            raise FileNotFoundError(f"Cannot find pdf file at {file_path}")
 
-        # 2. Chunk the Markdown structurally
-        chunks = self.chunker.chunk_document(parsed_doc)
+        try:
+            # 1. Parse the document using the provided parser
+            parsed_doc: ParsedDocument = self.parser.parse_file(file_path=file_path, document_id=document_id)
 
-        # 3. Batch generate dense vector embeddings across boundary interfaces
-        vectors: list[list[float]] = await self.embedder.embed(user_query=chunks)
+            logger.info(f"Successfully parsed document {document_id}. Total blocks extracted: {len(parsed_doc.blocks)}")
+            logger.info(f"Document {parsed_doc}")
 
-        if len(vectors) != len(parsed_doc.document_blocks):
-            raise ValueError(f"Embedder payload length mismatch. Expected {len(parsed_doc.document_blocks)} "f"vectors, but received {len(vectors)}.")
+            if parsed_doc.is_partial:
+                logger.warning(f"Partial parsing detected for document {document_id}. Some pages may not have been processed correctly.")
 
-        chunks_to_ingest: list[EmbeddedChunk] = []
-        for index, block in enumerate(parsed_doc.document_blocks):
-            chunk = EmbeddedChunk(
-                chunk_index=index,
-                text=chunks[index].content,
-                vector=vectors[index],
-                metadata=parsed_doc.metadata
-            )
-            chunks_to_ingest.append(chunk)
+            # Here we will call the semantic chunker
+            # 2. Chunk the parsed document into smaller blocks for semantic processing
+            # 3. Store the chunks in the vector store for semantic search and retrieval
+            # chunks = self.semantic_chunker.chunk(parsed_doc)
 
-        await self.vector_store.upsert(chunks=chunks_to_ingest)
-        return {"status": "SUCCESS", "chunks_ingested": len(chunks_to_ingest), "message":"Parsing and chunking complete.."}
+            # chunk_count = len(chunks)
+            # logger.info(f"Successfully processed document {document_id}. Total chunks created: {chunk_count}")
+
+
+        finally:
+            # Cleanup: Remove the file after processing to free up space
+            try:
+                os.remove(file_path)
+                logger.info(f"Successfully removed the file {file_path} after processing.")
+            except Exception as e:
+                logger.error(f"Failed to remove the file {file_path}. Error: {e}")
+        return {"document_id": document_id, "status": "processed", "is_partial": parsed_doc.is_partial, "total_blocks": len(parsed_doc.blocks)}
