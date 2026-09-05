@@ -1,7 +1,7 @@
 import uuid
 from enum import StrEnum
-from typing import Any
-from pydantic import BaseModel, Field, ConfigDict, HttpUrl, computed_field, model_validator
+from typing import Any, Dict, List
+from pydantic import BaseModel, Field, ConfigDict, computed_field, model_validator
 
 class SearchParams(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -29,24 +29,19 @@ class SourceType(StrEnum):
     TEXT = "text"
     MARKDOWN = "markdown"
 
-class DocumentMetaData(BaseModel):
-    model_config = ConfigDict(frozen=True)
-    source_id: str = Field(...)
-    source_type:SourceType
-    title: str | None = None
-    authors: list[str] | None = Field(default_factory=list, description="List of author names.")
-    abstract:str = Field(default="", max_length=5000)
+# class DocumentMetaData(BaseModel):
+#     model_config = ConfigDict(frozen=True)
+#     source_id: str = Field(...)
+#     source_type:SourceType
+#     title: str | None = None
+#     authors: list[str] | None = Field(default_factory=list, description="List of author names.")
+#     abstract:str = Field(default="", max_length=5000)
 
+"""This model represents a chunk of a document, which is a smaller segment of the original document."""
 class DocumentChunk(BaseModel):
-    text: str = Field(...,min_length=1)
-    metadata: DocumentMetaData
-    chunk_index: int = Field(...,ge=0)
-
-    @computed_field
-    def chunk_id(self) -> str:
-        """The idempotency key"""
-        unique_string=f"{self.metadata.source_id}_{self.chunk_index}_{self.text}"
-        return str(uuid.uuid5(uuid.NAMESPACE_OID, unique_string))
+    chunk_id: str = Field(...,min_length=1)
+    content: str = Field(...,min_length=1)
+    metadata: Dict[str,Any] = Field(default_factory=dict)
 
 class EmbeddedChunk(DocumentChunk):
     """A documentChunk augmented with its own vector representation"""
@@ -65,9 +60,8 @@ class BlockType(StrEnum):
     page="page"
 
 class DocumentBlock(BaseModel):
-    block_id: str = Field(default_factory="")
-    type: BlockType
-    content: str = Field(min_length=1)
+    page_number: int
+    markdown: str
     metadata: dict = Field(default_factory=dict)
 
 class Citation(BaseModel):
@@ -82,10 +76,8 @@ class DocumentMetaData(BaseModel):
 
 class ParsedDocument(BaseModel):
     document_id: str = Field(min_length=1)
-    metadata: DocumentMetaData
-    document_blocks: list[DocumentBlock] = Field(default_factory=list)
-    citations: list[Citation] = Field(default_factory=list)
-    status: str = Field(default_factory="PARTIAL_SUCCESS")
+    blocks: List[DocumentBlock]
+    is_partial: bool = False
 
 class Chunk(BaseModel):
     chunk_id: str
@@ -93,4 +85,3 @@ class Chunk(BaseModel):
     content: str
     token_count: int
     page_range: list[int]
-

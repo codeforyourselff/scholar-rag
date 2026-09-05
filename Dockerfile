@@ -47,6 +47,10 @@ RUN apt-get update \
 
 RUN useradd --create-home --uid 1000 appuser
 
+RUN mkdir -p /tmp/scholar_rag_staging && \
+    chown -R appuser:appuser /tmp/scholar_rag_staging && \
+    chmod 775 /tmp/scholar_rag_staging
+
 COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
 COPY --from=builder --chown=appuser:appuser /opt/models /opt/models
 

@@ -57,15 +57,19 @@ services:
           memory: ${QDRANT_MEMORY_LIMIT}
   celery_worker:
     build: .
-    command: celery -A app.core.celery.celery_app worker --loglevel=info --concurrency=2
+    command: /opt/venv/bin/celery -A app.core.celery.celery_app worker --loglevel=info --concurrency=2
     volumes:
-      - .:/code
+      - staging_volume:/tmp/scholar_rag_staging
     environment:
+      - PATH=/opt/venv/bin:${PATH}
       - PYTHONPATH=/code
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:${REDIS_PORT}/0
+      - HF_TOKEN=${HUGGINGFACE_TOKEN}
     depends_on:
       - redis
       - qdrant
+    env_file:
+      - .env
   api:
     build: .
     env_file:
@@ -75,6 +79,7 @@ services:
     ports:
       - "${FASTAPI_PORT}:${FASTAPI_PORT}"
     environment:
+      PATH: /opt/venv/bin:${PATH}
       QDRANT__HOST: qdrant
       QDRANT__PORT: ${QDRANT_PORT}
       POSTGRES__HOST: postgres
@@ -91,7 +96,10 @@ services:
         limits:
           cpus: ${FASTAPI_CPU_LIMIT}
           memory: ${FASTAPI_MEMORY_LIMIT}
+    volumes:
+      - staging_volume:/tmp/scholar_rag_staging
 volumes:
   pg_data:
   redis_data:
   qdrant_data:
+  staging_volume:
