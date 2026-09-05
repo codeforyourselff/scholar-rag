@@ -1,16 +1,13 @@
-import asyncio
-from app.adapters.subprocess_parser_adapter import SubprocessParserAdapter
-from app.domain.ports.parser_port import DocumentParserPort
-from app.modules.ingestion.academic_service import AcademicIngestionUseCase
-from app.modules.ingestion.semantic_markdown_chunker import SemanticMarkdownChunker
-import asyncpg
 import logging
+import asyncio
+import asyncpg
 from openai import AsyncOpenAI
 from redis.asyncio import Redis
 from qdrant_client import AsyncQdrantClient
 from sentence_transformers import SentenceTransformer
-from app.config import AppEnvironment, Settings, get_settings
+from app.config import AppEnvironment, Settings
 from app.adapters.llm_adapter import LLMAdapter
+from app.adapters.subprocess_marker_adapter import SubprocessMarkerAdapter
 from app.adapters.qdrant_adapter import QdrantAdapter
 from app.adapters.embedder_adapter import EmbedderAdapter
 from app.adapters.in_memory.fake_llm_adapter import FakeLLMAdapter
@@ -19,6 +16,7 @@ from app.modules.generation.prompt_builder import SecurePromptBuilder
 from app.modules.retrieval.service import DocumentRetrievalService
 from app.modules.ingestion.service import DocumentIngestionService
 from app.modules.ingestion.chunking import TokenChunker
+from app.modules.ingestion.academic_service import AcademicIngestionUseCase
 from app.domain.ports.vector_store_port import VectorStorePort
 from app.tests.unit.fake_vector_store import FakeVectorStore
 
@@ -169,17 +167,9 @@ class Container:
         return RAGUseCase(llm_port=llm_adapter,service=self.get_document_retrieval_service(),prompt_builder=secure_prompt_builder)
 
     def get_academic_ingestion_service(self) -> AcademicIngestionUseCase:
-        embedder_adapter = EmbedderAdapter(client=self.embedder)
-        # INJECT THE WRAPPER, NOT THE AI MODELS
-        parser: DocumentParserPort = SubprocessParserAdapter()
-        if self.settings.environment == AppEnvironment.local:
-            qdrant_adapter = FakeVectorStore()
-        else:
-            qdrant_adapter = QdrantAdapter(client=self.qdrant,collection_name=self.settings.qdrant.collection)
-
-        semantic_markdown_chunker: SemanticMarkdownChunker = SemanticMarkdownChunker(model_name=self.settings.embedder.model_name, max_tokens=250)
-        return AcademicIngestionUseCase(parser=parser,embedder=embedder_adapter,vector_store=qdrant_adapter,chunker=semantic_markdown_chunker)
-
+        parser = SubprocessMarkerAdapter(cli_script_path="app/workers/marker_cli.py",timeout_seconds=300)
+        return AcademicIngestionUseCase(parser=parser)
+    
 _container_instance: Container | None = None
 
 def get_container(settings:Settings) -> Container:
